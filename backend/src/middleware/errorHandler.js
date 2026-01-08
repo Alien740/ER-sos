@@ -1,0 +1,38 @@
+const errorHandler = (err, req, res, next) => {
+  console.error('Error:', err);
+
+  // Default error
+  let statusCode = err.statusCode || 500;
+  let message = err.message || 'Internal server error';
+
+  // Sequelize validation error
+  if (err.name === 'SequelizeValidationError') {
+    statusCode = 400;
+    message = err.errors.map(e => e.message).join(', ');
+  }
+
+  // Sequelize unique constraint error
+  if (err.name === 'SequelizeUniqueConstraintError') {
+    statusCode = 400;
+    message = 'Duplicate entry';
+  }
+
+  // JWT errors
+  if (err.name === 'JsonWebTokenError') {
+    statusCode = 401;
+    message = 'Invalid token';
+  }
+
+  if (err.name === 'TokenExpiredError') {
+    statusCode = 401;
+    message = 'Token expired';
+  }
+
+  res.status(statusCode).json({
+    success: false,
+    message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+};
+
+module.exports = errorHandler;
